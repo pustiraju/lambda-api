@@ -1,0 +1,86 @@
+const express = require("express");
+const serverless = require("serverless-http");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+
+const app = express();
+app.use(express.json());
+
+const users = []; // Demo storage, use DynamoDB for production
+
+// --- Nodemailer setup ---
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+async function sendMail(to, subject, text) {
+  const mailOptions = {
+    from: `"Yoga Samadhan" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    text,
+  };
+  return transporter.sendMail(mailOptions);
+}
+
+// --- Signup with OTP ---
+app.post("/signup", async (req, res) => {
+  const { username, email, password } = req.body;
+
+  if (users.find((u) => u.username === username)) {
+    return res.status(400).json({ error: "User already exists" });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+
+  users.push({ username, email, password: hashedPassword, verified: false, otp });
+
+  try {
+    await sendMail(email, "Your OTP Code", `Your OTP is: ${otp}`);
+  } catch (err) {
+    console.error("Email error:", err);
+  }
+
+  res.json({ message: "Signup successful, check your email for OTP" });
+});
+
+// --- Verify OTP ---
+app.post("/verify-otp", (req, res) => {
+  const { username, otp } = req.body;
+  const user = users.find((u) => u.username === username);
+
+  if (!user) return res.status(400).json({ error: "User not found" });
+  if (user.verified) return res.json({ message: "Already verified" });
+
+  if (user.otp === otp) {
+    user.verified = true;
+    delete user.otp; // remove OTP after success
+    return res.json({ message: "OTP verified, you can now log in" });
+  } else {
+    return res.status(400).json({ error: "Invalid OTP" });
+  }
+});
+
+// --- Login ---
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find((u) => u.username === username);
+
+  if (!user) return res.status(400).json({ error: "User not found" });
+  if (!user.verified) return res.status(400).json({ error: "Please verify your email first" });
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return res.status(400).json({ error: "Invalid password" });
+
+  const token = jwt.sign({ username }, "SECRET_KEY", { expiresIn: "1h" });
+  res.json({ message: "Login successful", token });
+});
+
+// --- Export for Lambda ---
+module.exports.handler = serverless(app);
