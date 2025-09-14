@@ -1,0 +1,26 @@
+{
+  "name": "lambda-api",
+  "version": "1.0.0",
+  "main": "api.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pustiraju/lambda-api.git"
+  },
+  "author": "raju pusti",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pustiraju/lambda-api/issues"
+  },
+  "homepage": "https://github.com/pustiraju/lambda-api#readme",
+  "description": "",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.6",
+    "serverless-http": "^4.0.0"
+  }
+}
