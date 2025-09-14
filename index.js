@@ -1,13 +1,12 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const AWS = require("aws-sdk");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const serverless = require("serverless-http");
 
 const app = express();
-app.use(bodyParser.json());
-upp.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const dynamo = new AWS.DynamoDB.DocumentClient({ region: "ap-south-1" });
 const TABLE_NAME = "webData";
