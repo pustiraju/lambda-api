@@ -11,7 +11,17 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const users = []; // Demo storage, use DynamoDB for production
+  await dynamo.put({
+      TableName: USERS_TABLE,
+      Item: {
+        email,
+        name,
+        passwordHash,
+        createdAt: new Date().toISOString(),
+        verified: false
+      },
+      ConditionExpression: "attribute_not_exists(email)" // prevents overwriting existing user
+    }).promise(); 
 
 // --- Nodemailer setup ---
 const transporter = nodemailer.createTransport({
