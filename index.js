@@ -37,7 +37,7 @@ app.post("/signup", async (req, res) => {
   console.log("Received signup request:", { name, email, password });
   
 
- const existingUser = await dynamodb
+ const existingUser = await dynamo
       .get({
         TableName: "webData",
         Key: { email }, // email is partition key
