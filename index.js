@@ -11,17 +11,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-  await dynamo.put({
-      TableName: USERS_TABLE,
-      Item: {
-        email,
-        name,
-        passwordHash,
-        createdAt: new Date().toISOString(),
-        verified: false
-      },
-      ConditionExpression: "attribute_not_exists(email)" // prevents overwriting existing user
-    }).promise(); 
 
 // --- Nodemailer setup ---
 const transporter = nodemailer.createTransport({
@@ -46,15 +35,26 @@ async function sendMail(to, subject, text) {
 app.post("/signup", async (req, res) => {
   const { name, email, password } = req.body;
   console.log("Received signup request:", { name, email, password });
+  
 
   if (users.find((u) => u.name === name)) {
     return res.status(400).json({ error: "User already exists" });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  // const hashedPassword = await bcrypt.hash(password, 10);
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
 
-  users.push({ name, email, password: hashedPassword, verified: false, otp });
+  await dynamo.put({
+      TableName: USERS_TABLE,
+      Item: {
+        name,
+        email,
+        password,
+        createdAt: new Date().toISOString(),
+        verified: false
+      },
+      ConditionExpression: "attribute_not_exists(email)" // prevents overwriting existing user
+    }).promise();
 
   try {
     await sendMail(email, "Your OTP Code", `Your OTP is: ${otp}`);
