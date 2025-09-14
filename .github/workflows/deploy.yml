@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - update.zip # Only run workflow if update.zip changes
 
 jobs:
   deploy:
@@ -29,4 +31,3 @@ jobs:
             --function-name $LAMBDA_FUNCTION_NAME \
             --zip-file fileb://update.zip \
             --region ap-south-1
-
