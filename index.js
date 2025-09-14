@@ -37,9 +37,16 @@ app.post("/signup", async (req, res) => {
   console.log("Received signup request:", { name, email, password });
   
 
-  // if (users.find((u) => u.name === name)) {
-  //   return res.status(400).json({ error: "User already exists" });
-  // }
+ const existingUser = await dynamodb
+      .get({
+        TableName: "webData",
+        Key: { email }, // email is partition key
+      })
+      .promise();
+
+    if (existingUser.Item) {
+      return res.status(400).json({ error: "User already exists" });
+    }
 
   // const hashedPassword = await bcrypt.hash(password, 10);
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
