@@ -1,26 +1,30 @@
 const express = require("express");
+const AWS = require("aws-sdk");
 const serverless = require("serverless-http");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const dynamo = new AWS.DynamoDB.DocumentClient();
+const USERS_TABLE = "webData";
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const users = []; // Demo storage, use DynamoDB for production
 
 // --- Nodemailer setup ---
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  service: "yahoo",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.YAHOO_EMAIL,
+    pass: process.env.YAHOO_PASSWORD,
   },
 });
 
 async function sendMail(to, subject, text) {
   const mailOptions = {
-    from: `"Yoga Samadhan" <${process.env.EMAIL_USER}>`,
+    from: process.env.YAHOO_EMAIL,
     to,
     subject,
     text,
@@ -30,16 +34,17 @@ async function sendMail(to, subject, text) {
 
 // --- Signup with OTP ---
 app.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { name, email, password } = req.body;
+  console.log("Received signup request:", { name, email, password });
 
-  if (users.find((u) => u.username === username)) {
+  if (users.find((u) => u.name === name)) {
     return res.status(400).json({ error: "User already exists" });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
 
-  users.push({ username, email, password: hashedPassword, verified: false, otp });
+  users.push({ name, email, password: hashedPassword, verified: false, otp });
 
   try {
     await sendMail(email, "Your OTP Code", `Your OTP is: ${otp}`);
@@ -84,3 +89,4 @@ app.post("/login", async (req, res) => {
 
 // --- Export for Lambda ---
 module.exports.handler = serverless(app);
+
